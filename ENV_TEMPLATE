@@ -1,0 +1,9 @@
+# ThreatFox API Configuration
+API_URL="https://threatfox-api.abuse.ch/api/v1/"
+THREATFOX_API_KEY="your_api_key_goes_here"
+QUERY_DAYS=7
+
+# MongoDB Configuration
+MONGO_URI="your_mongodb_connection_string"
+DB_NAME="threat_intelligence"
+COLLECTION_NAME="threatfox_raw"
