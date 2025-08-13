@@ -1,94 +1,97 @@
-# ThreatFox ETL Data Connector
+# ThreatFox Data Connector
 
-## 🚀 Overview
+---
+- **Student Name:** Ananth Narayanan P
+- **Roll Number:** 3122 22 5001 010
+- **Dept:** CSE-A
+---
 
-This project provides a robust ETL (Extract, Transform, Load) pipeline written in Python. It securely connects to the authenticated **ThreatFox API** by abuse.ch, extracts recent Indicators of Compromise (IOCs), enriches the data, and loads it into a MongoDB database.
+## 📋 Overview
 
+This Python script is an ETL (Extract, Transform, Load) pipeline that connects to the **ThreatFox API** by abuse.ch. It extracts recent threat intelligence data, transforms it by adding an ingestion timestamp, and loads it into a specified MongoDB collection.
+
+This project was developed as part of the Software Architecture assignment for SSN CSE, in collaboration with Kyureeus EdTech.
 
 ---
 
-## 🛡️ Error Handling & Robustness
+## ⚙️ API Details
 
-This ETL pipeline is built with resilience in mind and gracefully handles a variety of potential failures.
+-   **Provider**: ThreatFox (abuse.ch)
+-   **Endpoint Used**: `https://threatfox.abuse.ch/export/json/recent/`
+-   **Authentication**: None required for this public endpoint.
+-   **Data Format**: JSON
 
-* **Invalid API Responses**: The script validates the API response at two levels. It first checks for **HTTP errors** (like `401 Unauthorized` for a bad API key or `500 Server Error`). It then inspects the JSON body for **API-specific error messages** (e.g., `query_status: "illegal_query"`), ensuring that only valid data proceeds to the next stage.
-
-* **Connectivity Errors**: The entire network communication process is wrapped in `try...except` blocks. This means the script will not crash from a **failed API connection** (e.g., no internet) or a **failed MongoDB connection** (e.g., incorrect credentials, firewall block, or downed server). It will instead log the error and terminate gracefully.
-
-* **Empty or Malformed Payloads**: The script is designed to handle cases where the API returns a successful status but no data (`"data": []`). Each stage of the pipeline checks if the data it received is valid and non-empty before processing, preventing unexpected errors.
-
-* **Secure Credential Management**: All sensitive information (API keys, database URIs) is loaded securely from a local `.env` file. This file is explicitly listed in `.gitignore` to **prevent accidental commits of secrets** to the repository, following security best practices.
+The script fetches indicators of compromise (IOCs) added in the last 7 days.
 
 ---
 
-## ⚙️ Setup and Execution
+## 🚀 How to Run
 
-Follow these steps to set up and run the ETL pipeline.
+### 1. Prerequisites
 
-### Prerequisites
+-   Python 3.8+
+-   Access to a MongoDB database (like MongoDB Atlas).
 
-* Python 3.8+
-* Access to a MongoDB database (e.g., MongoDB Atlas)
-* A valid **Auth-Key** from the [ Authentication Portal](https://auth.abuse.ch/user/me)
+### 2. Setup
 
-### Installation
+1.  **Clone the repository** and navigate into your project folder.
 
-1.  **Clone the Repository**
-    Clone the project to your local machine.
-
-2.  **Create a Virtual Environment**
-    It's highly recommended to use a virtual environment to manage dependencies.
+2.  **Create a virtual environment** (recommended):
     ```bash
-    # Create the environment
     python -m venv venv
-
-    # Activate the environment
-    # On Windows: venv\Scripts\activate
-    # On macOS/Linux: source venv/bin/activate
+    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
     ```
 
-3.  **Install Dependencies**
-    Install all required Python libraries from the `requirements.txt` file.
+3.  **Install dependencies**:
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Configure Environment Variables**
-    a. Create a new file named `.env` in the root of the project.
+4.  **Configure Credentials**:
+    -   Create a file named `.env` in the project root.
+    -   Copy the contents from the example below and replace the placeholder with your **actual MongoDB connection string**.
 
-    b. Copy the content from `ENV_TEMPLATE` into your new `.env` file.
-
-    c. Replace the placeholder values with your **actual secrets**.
-
-    **Example `ENV_TEMPLATE` (for reference):**
-    ```
-    # ThreatFox API Configuration
-    API_URL="[https://threatfox-api.abuse.ch/api/v1/](https://threatfox-api.abuse.ch/api/v1/)"
-    THREATFOX_API_KEY="your_api_key_goes_here"
-    QUERY_DAYS=7
-
-    # MongoDB Configuration
-    MONGO_URI="your_mongodb_connection_string"
+    ```env
+    # .env file
+    API_URL="[https://threatfox.abuse.ch/export/json/recent/](https://threatfox.abuse.ch/export/json/recent/)"
+    MONGO_URI="mongodb+srv://<username>:<password>@<cluster-url>/<db-name>?retryWrites=true&w=majority"
     DB_NAME="threat_intelligence"
     COLLECTION_NAME="threatfox_raw"
     ```
-    ⚠️ **Important**: The `.env` file is your secret store. **NEVER** commit it to Git.
 
-### Running the Script
+### 3. Execute the Script
 
-Execute the main connector script from your terminal.
+Run the ETL pipeline from your terminal:
 ```bash
 python etl_connector.py
 ```
-You will see log messages in the console indicating the progress of the Extract, Transform, and Load stages.
 
 ---
 
-## 🗃️ Project Structure
+## 🗃️ MongoDB Output
 
-* `etl_connector.py`: The main Python script containing the ETL logic.
-* `requirements.txt`: A list of all Python dependencies for the project.
-* `README.md`: This documentation file.
-* `.gitignore`: Specifies files and directories that Git should ignore (like `.env` and `venv/`).
-* `ENV_TEMPLATE`: A safe, committable template listing the required environment variables.
-* `.env`: A local, untracked file for storing your secret credentials.
+The script will load documents into the `threatfox_raw` collection within the `threat_intelligence` database. Each document will be a threat record from the API, with an added `ingestion_timestamp` field.
+
+**Example Document in MongoDB:**
+
+```json
+{
+  "_id": "...",
+  "ioc_id": "12345",
+  "ioc_value": "some-malicious-domain.com",
+  "ioc_type": "domain",
+  "threat_type": "malware",
+  "threat_type_desc": "Represents malware C2 infrastructure.",
+  "malware": "SomeMalware",
+  "malware_printable": "SomeMalware",
+  "malware_alias": null,
+  "malware_malpedia": "[https://malpedia.caad.fkie.fraunhofer.de/details/win.some_malware](https://malpedia.caad.fkie.fraunhofer.de/details/win.some_malware)",
+  "confidence_level": 100,
+  "first_seen_utc": "2025-08-14 00:20:00",
+  "last_seen_utc": null,
+  "reference": "[https://some-threat-report.com/report](https://some-threat-report.com/report)",
+  "reporter": "some_security_researcher",
+  "tags": ["C2"],
+  "ingestion_timestamp": "2025-08-14T00:30:02.123456Z"
+}
+```
